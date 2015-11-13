@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>FREIGHT SEARCH RESULTS</title>
+    <meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+	<script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+	<link type="text/css" rel="stylesheet" href="stylesheet.css"/>
+	<script src="https://maps.googleapis.com/maps/api/js?v=3.exp"></script>
+</head>
+<body>
+  
+	<div class="container">
+		
+		<!-- logo-->
+		<div class="row">
+			<div class="col-sm-12" >
+				<div id="logo">
+					<img class="img-responsive" src="15041313-aCNmn.jpg" alt="logo" width="200" height="100">
+				</div>
+			</div>
+		</div>
+	  <!--Banner-->
+		<div class="row">
+			<div class="col-sm-12" >
+				<div id="banner">
+					<img class="img-responsive" src="18290604-uezVC.jpg" alt="banner" width="860" height="200">
+				</div>
+			</div>
+	  </div>
+	  <!--button-->
+		<div class="row">
+			<div id="button_id">
+				<div class="col-sm-2" >
+					<button type="button" class="btn btn-primary btn-lg">DASHBOARD</button>
+				</div>
+				<div class="col-sm-3" >
+					<button type="button" class="btn btn-primary btn-lg">FREIGHT SEARCH</button>
+				</div>
+				<div class="col-sm-3" >
+					<button type="button" class="btn btn-primary btn-lg">SPOT REQUEST</button>
+				</div>
+				<div class="col-sm-2" >
+					<button type="button" class="btn btn-primary btn-lg">BOOKING</button>
+				</div>
+		
+			</div>
+		</div>
+	  <!-- search option-->
+		<div class="row">
+			<div id="search_option_id">
+				<div class="col-sm-8" >
+					<div class="form-group">
+						<label for="usr">From Place:</label>
+							<input type="text" class="form-control" id="from">
+					</div>
+				<div class="form-group">
+					<label for="usr">To Place:</label>
+					<input type="text" class="form-control" id="to">
+				</div>
+				<button type="button" class="btn btn-default" onclick="getSearchPlaceName([document.getElementById('from').value, 
+				document.getElementById('to').value])">SEARCH</button>
+				</div>
+			</div>
+		</div>
+		  
+	  <!--search banner-->
+	  
+		<div class="row">
+			<div id="search_banner_id">
+				<div class="col-sm-8" >
+					<div class="well well-sm" >
+		
+						   <h4>      YOUR SEARCH ON MAP     </h4>
+
+					</div>
+				</div>
+			</div>
+		</div>
+	  
+	  <!-- Map View-->
+		<div class="row">
+			<div class="col-sm-12" >
+				<div id="map-canvas"></div>
+			</div>
+		
+		</div>
+		<!--search result-->
+		<div class="row">
+			<div id="search_result_id">
+				<div class="col-sm-8" >
+					<div class="well well-sm" >
+		
+						   <h4>      YOUR SEARCH RESULT     </h4>
+
+					</div>
+				</div>
+			</div>
+		</div>
+
+	  <!-- Search result  Table-->
+	  
+		<div class="row">
+			<div id="search_result_table_id_1">
+				<div class="col-sm-8" >
+		
+					<table id="myTable" width="100%" border="1" >
+					</table>
+
+				</div>
+			</div>
+		</div>  
+	</div>
+</body>
+
+<script>
+	
+	var searchPlaceName_from="";
+	var searchPlaceName_to="";
+	var locationPathLineDrawLat=new Array();
+	var locationPathLineDrawLng=new Array();
+	pathDetail=new Array();
+    var diffPath = [];
+	var pathDistanceCityArray=new Array();
+	
+	// Mock Data...
+	
+    locations = [
+      ['Stockholm', 59.3261917, 17.7073633, 0],
+	  ['Dhaka', 23.7808875, 90.2792365, 4],
+      ['Taizhou', 28.6613633, 121.1352016, 3],
+	  ['Mumbai', 19.1547017, 72.4128558, 2],
+	  ['Cairo', 30.0404506, 31.156151, 1]
+    ];
+
+	//Action event from search button.
+	function getSearchPlaceName(e){
+		
+		searchPlaceName_from=e[0];
+		searchPlaceName_to=e[1];
+		console.log(searchPlaceName_to);
+		var locationTemp=new Array();
+		var j=1;
+		var flag_1=true;
+		var flag_2=true;
+
+		// search place is in the Mock Data test..
+		
+		for(var i=0;i<locations.length;i++){
+			if (searchPlaceName_from==locations[i][0]){
+				flag_1=false;
+				
+			} else if(searchPlaceName_to==locations[i][0]){
+				flag_2=false;
+			}
+		}
+		
+		// alert if search place is not exist in the Mock Data...
+		
+		if(flag_1==true||flag_2==true){
+			alert("Place not found in Mock Data\ntry Stockholm,Dhaka,Taizhou,Mumbai,Cairo");
+			return false;// if data is not found then rest will not work..
+		}
+
+		// Search place insert into the location array...
+		
+		for (var i=0;i<locations.length;i++){
+			if(locations[i][0]==searchPlaceName_from){
+				sourcerPlacePos=i;
+				locationTemp[0]=locations[i];	
+			}
+			 else if(searchPlaceName_to==locations[i][0]){
+				destinationPlacePos=i;
+				locationTemp[4]=locations[i];	
+			}
+			else{
+			locationTemp[j]=locations[i];
+			console.log(j);
+				j++;
+			}
+		}
+		locations=locationTemp.slice();
+		
+		funcMain();
+
+	}
+	function funcMain(){
+		
+		var i=0;
+		
+		// adjacency list for another approach to find possible path finding..
+		
+		/*
+		var location_adjacency_list=[
+		[0,1,3,2],
+		[1,2,4],
+		[2,4],
+		[3,4]
+		];
+		*/
+		
+		var outputArray=new Array();
+		var outputArray1=new Array();
+		
+		// another approach to find possible path .. not work for all case...
+		
+		/*
+		for (var i=1;i<(location_adjacency_list[0].length);i++){
+			//console.log(location_adjacency_list[4].length);
+			var parent=location_adjacency_list[0][i];
+			outputArray.push(parent);
+			for(var j=1;j<location_adjacency_list.length-1;j++){
+			
+					var chield=location_adjacency_list[parent][1];
+					outputArray1.push(chield);
+					if (chield==4){
+						break;
+					}
+					else{
+						parent=chield;	
+					}
+			}
+		}*/
+		
+		// Object of the path direction of the locations array... 
+		
+		var pathDirection =  [{"Source":0,"Destination":1},
+								{"Source":0,"Destination":3},
+								{"Source":0,"Destination":2},
+								{"Source":1,"Destination":2},
+								{"Source":1,"Destination":4},
+								{"Source":2,"Destination":4},
+								{"Source":3,"Destination":4},
+								];
+		// find all possible path in a recursive approach...
+		
+		var getAllSource = function(destId){
+			var sourceForsameDist = [];
+			pathDirection.forEach(function(eachDirection){
+			  if(eachDirection.Destination == destId){
+				sourceForsameDist.push(eachDirection.Source);
+			  }
+		  });
+				return sourceForsameDist;
+		};
+
+		//var diffPath = [];
+
+		var init = function(destination){
+
+		   var sourceId =  getAllSource(destination[destination.length -1]);
+			if(sourceId.length == 0){
+			  diffPath.push(destination);
+
+			}
+		   for(var i=0;i<sourceId.length;i++){
+			 var copy  = destination.slice(0);
+			 copy.push(sourceId[i]);
+			 init(copy);
+		   }
+
+		};
+
+		init([4]);
+
+
+		var locationLat=new Array();
+		var locationLng=new Array();
+		var latLng=new Array();
+		var locationPlathLat=new Array();
+		var locationPathLng=new Array();
+		
+		// lat lng to draw the marker in Google map..
+		
+		for(var i=0;i<diffPath.length;i++){
+			for(var j=0;j<diffPath[i].length;j++){
+				//console.log(j);
+				locationLat.push(locations[diffPath[i][j]][1]);
+				locationLng.push(locations[diffPath[i][j]][2]);
+			}
+			
+			locationPlathLat.push(locationLat);
+			locationPathLng.push(locationLng);
+			//console.log(latLng);
+			var locationLat=new Array();
+			var locationLng=new Array();
+		}
+		
+		//to draw line we need a path like 1-->2....2-->3...3-->4
+		//so except first and last point we need every point 2 times..
+
+		var tempLatArray=new Array();
+		var tempLngArray=new Array();
+		
+		for(var i=0;i<locationPlathLat.length;i++){
+			for(var j=0;j<locationPlathLat[i].length;j++){
+				if(j==0){
+
+					tempLatArray.push(locationPlathLat[i][j]);
+					tempLngArray.push(locationPathLng[i][j]);
+				}
+				else if(j==locationPlathLat[i].length-1){
+					tempLatArray.push(locationPlathLat[i][j]);
+					tempLngArray.push(locationPathLng[i][j]);
+				}
+				else{
+					tempLatArray.push(locationPlathLat[i][j]);
+					tempLngArray.push(locationPathLng[i][j]);
+					tempLatArray.push(locationPlathLat[i][j]);
+					tempLngArray.push(locationPathLng[i][j]);
+				}
+			}
+			
+			locationPathLineDrawLat.push(tempLatArray);
+			locationPathLineDrawLng.push(tempLngArray);
+			var tempLatArray=new Array();
+			var tempLngArray=new Array();
+
+		}
+	//;
+
+		var dis=0;
+		var pathdistanceArray=new Array();
+		var pathDistanceFromEveryCityArray=new Array();
+
+		// finding the distance of each 2 point...
+		for(var i=0;i<locationPlathLat.length;i++){
+			for(var j=0;j<locationPlathLat[i].length-1;j++){			
+				var radlat1 = Math.PI * locationPlathLat[i][j]/180
+				var radlat2 = Math.PI * locationPlathLat[i][j+1]/180
+				var radlon1 = Math.PI * locationPathLng[i][j]/180
+				var radlon2 = Math.PI * locationPathLng[i][j+1]/180
+				var theta = locationPathLng[i][j]-locationPathLng[i][j+1];
+				var radtheta = Math.PI * theta/180
+				var dist = Math.sin(radlat1) * Math.sin(radlat2) + Math.cos(radlat1) * Math.cos(radlat2) * Math.cos(radtheta);
+				dist = Math.acos(dist)
+				dist = dist * 180/Math.PI
+				dist = dist * 60 * 1.1515
+				var x =dist*1.609344;
+				dis=dis+x;
+				pathDistanceFromEveryCityArray.push(x);
+			}
+			pathdistanceArray.push(dis);
+			pathDistanceCityArray.push(pathDistanceFromEveryCityArray);
+			dis=0;
+			var pathDistanceFromEveryCityArray=new Array();
+		}
+
+		var pathDetailTemp=new Array();
+		var pathCost=0;
+		var pathTime=0;
+		
+		// finding the path detail .. cost .. distance .. days ..
+		
+		for(var i=0;i<diffPath.length;i++){
+			for(var j=0;j<diffPath[i].length;j++){
+				
+				pathDetailTemp.push(locations[diffPath[i][j]][0]);
+				
+			}
+			
+			pathCost=pathdistanceArray[i]/10;
+			pathTime=pathdistanceArray[i]/350;
+			pathProperty=[pathdistanceArray[i],pathCost,pathTime];
+			pathDetail.push(pathDetailTemp);
+			pathDetail.push(pathProperty);
+			
+			var pathDetailTemp=new Array();
+			pathCost=0;
+			pathTime=0;
+		}
+		
+		// call the Google map to show the path ...
+		initialize();
+	}
+
+
+	function initialize() {
+		
+	  var mapOptions = {
+		zoom: 2,
+		center: new google.maps.LatLng(30.0404506, 31.156151),
+		mapTypeId: google.maps.MapTypeId.TERRAIN
+	  };
+
+	  var map = new google.maps.Map(document.getElementById('map-canvas'),mapOptions);
+	  var flightPlanCoordinateTemp=new Array();
+	  var flightPlanCoordinate=new Array();
+	  for(var i=0;i<locationPathLineDrawLat.length;i++){
+		for(var j=0;j<locationPathLineDrawLat[i].length;j++){
+		
+			flightPlanCoordinateTemp.push(new google.maps.LatLng(locationPathLineDrawLat[i][j], locationPathLineDrawLng[i][j]));
+			
+		}
+		flightPlanCoordinate.push(flightPlanCoordinateTemp);
+		var flightPlanCoordinateTemp=new Array();
+	  }
+	  var flightPath=new Array();
+	  
+	  
+	  var colorArray=['darkgreen','orange','red','black'];
+	  var strokeWeightArray=[4,2,1,1];
+	  
+		  for(var i=0;i<flightPlanCoordinate.length;i++){
+			
+				flightPath.push(new google.maps.Polyline({
+				
+				path: flightPlanCoordinate[i],
+				geodesic: true,
+				strokeColor: colorArray[i],
+				strokeOpacity: 1.0,
+				strokeWeight: strokeWeightArray[i]
+				
+				
+			  })) ;
+			  
+		  }
+
+		  for (i=0;i<flightPath.length;i++){
+				flightPath[i].setMap(map);
+		  }
+	  
+	  var infowindow = new google.maps.InfoWindow();
+
+		var marker, i;
+
+		for (i = 0; i < locations.length; i++) {  
+		  marker = new google.maps.Marker({
+			position: new google.maps.LatLng(locations[i][1], locations[i][2]),
+			map: map
+		  });
+		
+		  google.maps.event.addListener(marker, 'click', (function(marker, i) {
+			return function() {
+			  infowindow.setContent(locations[i][0]);
+			  infowindow.open(map, marker);
+			}
+		  })(marker, i));
+	  
+		}
+		// create the table to show the options...
+		tableCreate();
+	}
+	function tableCreate() {
+		console.log("PathDetail");
+		console.log(pathDetail);
+
+		var pathDetailCounter=0;
+		for(var i=0;i<diffPath.length;i++){
+			var x=pathDistanceCityArray[i].length-1;
+			var table = document.getElementById("myTable");
+
+			var totalPath=pathDetail[pathDetailCounter].reverse();
+			var pathProperty=pathDetail[pathDetailCounter+1];
+			pathDetailCounter=pathDetailCounter+2;
+			
+			var singlePath=diffPath[i].reverse();
+			console.log(singlePath);
+			for(var j=0;j<totalPath.length;j++){
+			
+				var arr=[totalPath[j],totalPath[j+1]];
+			
+				var dis =pathDistanceCityArray[i][x];
+				var cost=dis/10;
+				var time=dis/350;
+				x--;
+				//var table = document.getElementById("myTable");
+				if(j<totalPath.length-1){
+					var row = table.insertRow(0);
+					var cell1 = row.insertCell(0);
+					var cell2 = row.insertCell(1);
+					var cell3 = row.insertCell(2);
+					var cell4 = row.insertCell(3);
+					cell1.innerHTML =arr ;
+					cell2.innerHTML = parseFloat(dis).toFixed(2)+" km";
+					cell3.innerHTML= parseFloat(cost).toFixed(2)+" \u20AC";
+					cell4.innerHTML= parseFloat(time).toFixed(2)+" Days";
+				}else if(j==totalPath.length-1){
+					var row = table.insertRow(0);
+					var cell1 = row.insertCell(0);
+					var cell2 = row.insertCell(1);
+					var cell3 = row.insertCell(2);
+					var cell4 = row.insertCell(3);
+			
+					cell1.innerHTML ="  " ;
+					cell2.innerHTML = "  ";
+					cell3.innerHTML="  ";
+					cell4.innerHTML="  ";
+				}
+			}
+			
+			var row1 = table.insertRow(1);
+			var cell5 = row1.insertCell(0);
+			var cell6 = row1.insertCell(1);
+			var cell7=row1.insertCell(2);
+			var cell8=row1.insertCell(3);
+			cell5.innerHTML=totalPath;
+			cell6.innerHTML= parseFloat(pathProperty[0]).toFixed(2)+" km";
+			cell7.innerHTML= parseFloat(pathProperty[1]).toFixed(2)+ " \u20AC";
+			cell8.innerHTML=parseFloat(pathProperty[2]).toFixed(2)+" Days";
+			
+			var row2=table.insertRow(0);
+			var cell9=row2.insertCell(0);
+			var cell10=row2.insertCell(1);
+			var cell11=row2.insertCell(2);
+			var cell12=row2.insertCell(3);
+			cell9.innerHTML="option" ;
+			cell10.innerHTML="Distance";
+			cell11.innerHTML="Cost";
+			cell12.innerHTML="Time";		
+		}
+	}
+	
+//load the map
+google.maps.event.addDomListener(window, 'load', initialize);
+
+</script>
+</html>
